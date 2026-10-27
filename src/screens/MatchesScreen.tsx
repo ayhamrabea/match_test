@@ -6,6 +6,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { FilterTabs } from '../components/FilterTabs';
@@ -14,17 +15,26 @@ import { UpdatedAgo } from '../components/UpdatedAgo';
 import { useFavorites } from '../hooks/useFavorites';
 import { useMatches } from '../hooks/useMatches';
 import type { Match } from '../types/match';
-import { FILTER_LABELS, matchesFilter, type MatchFilter } from '../utils/matchPresentation';
+import {
+  FILTER_LABELS,
+  matchesFilter,
+  matchesQuery,
+  type MatchFilter,
+} from '../utils/matchPresentation';
 
 // Экран «Матчи тура» — задание в README.md, часть 1.
 export function MatchesScreen() {
   const { data, loading, refreshing, error, updatedAt, reload } = useMatches();
   const { favorites, isFavorite, toggle } = useFavorites();
   const [filter, setFilter] = useState<MatchFilter>('all');
+  const [query, setQuery] = useState('');
 
   const visibleMatches = useMemo(
-    () => (data?.matches ?? []).filter((match) => matchesFilter(match, filter)),
-    [data, filter],
+    () =>
+      (data?.matches ?? []).filter(
+        (match) => matchesFilter(match, filter) && matchesQuery(match, query),
+      ),
+    [data, filter, query],
   );
 
   const renderItem = useCallback(
@@ -57,7 +67,9 @@ export function MatchesScreen() {
   const emptyText =
     data.matches.length === 0
       ? 'В этом туре пока нет матчей.'
-      : `Нет матчей в категории «${FILTER_LABELS[filter]}».`;
+      : query.trim()
+        ? `Нет матчей по запросу «${query.trim()}».`
+        : `Нет матчей в категории «${FILTER_LABELS[filter]}».`;
 
   return (
     <View style={styles.container}>
@@ -75,6 +87,16 @@ export function MatchesScreen() {
           <Text style={styles.bannerText}>{error}</Text>
         </View>
       )}
+
+      <TextInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Поиск по клубу"
+        placeholderTextColor="#9ca3af"
+        autoCorrect={false}
+        clearButtonMode="while-editing"
+        style={styles.search}
+      />
 
       <FilterTabs value={filter} onChange={setFilter} />
 
@@ -145,6 +167,15 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     color: '#b91c1c',
+  },
+  search: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    fontSize: 15,
   },
   button: {
     paddingVertical: 10,
