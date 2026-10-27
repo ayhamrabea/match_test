@@ -8,13 +8,18 @@ type Props = {
 
 // Подпись «Обновлено N сек назад».
 export function UpdatedAgo({ since }: Props) {
-  const [seconds, setSeconds] = useState(0);
+  // Значение не используется — тик нужен только чтобы раз в секунду перерисоваться.
+  const [, setTick] = useState(0);
 
   useEffect(() => {
-    setInterval(() => {
-      setSeconds(seconds + 1);
-    }, 1000);
+    // Функциональное обновление не зависит от замыкания, а clearInterval
+    // не даёт интервалам копиться при размонтировании.
+    const timer = setInterval(() => setTick((tick) => tick + 1), 1000);
+    return () => clearInterval(timer);
   }, []);
+
+  // Считаем от since на каждом рендере, поэтому новый since сразу сбрасывает счётчик.
+  const seconds = Math.max(0, Math.floor((Date.now() - since.getTime()) / 1000));
 
   return <Text style={styles.text}>Обновлено {seconds} сек назад</Text>;
 }
